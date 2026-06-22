@@ -14,7 +14,8 @@ def ejecutar_ciclo_raspa():
     if rutas_recibidas:
         for email_usuario, ruta_gpx in rutas_recibidas:
             print(f"\n⚙️ Procesando la ruta de {email_usuario}...")
-            nombre_usuario = email_usuario 
+            # Nos quedamos solo con la parte antes de la @ para el nombre público
+            nombre_usuario = email_usuario.split('@')[0]
             procesar_usuario(email_usuario, nombre_usuario, ruta_gpx)
             
             # Borramos el GPX de la carpeta temporal tras procesarlo para no llenar el disco
