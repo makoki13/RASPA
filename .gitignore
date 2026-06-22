@@ -1,0 +1,25 @@
+# Entorno virtual de Python
+venv/
+
+# Archivos de sistema
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Archivos de datos pesados (Los shapefiles los tendremos localmente, NO en GitHub)
+data/*.shp
+data/*.dbf
+data/*.shx
+data/*.prj
+data/*.cpg
+data/*.qpj
+
+# Base de datos local (si decides no subirla)
+*.db
+*.sqlite
+
+# Archivos temporales de GPX de los usuarios
+gpx_temp/*.gpx
+
+# Salida web generada (si no quieres versionarla)
+output_web/*
