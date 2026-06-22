@@ -20,6 +20,3 @@ data/*.qpj
 
 # Archivos temporales de GPX de los usuarios
 gpx_temp/*.gpx
-
-# Salida web generada (si no quieres versionarla)
-output_web/*
