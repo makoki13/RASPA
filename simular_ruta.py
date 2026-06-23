@@ -42,8 +42,8 @@ def procesar_usuario(email, nombre, ruta_gpx):
     puntos += total_municipios
     print(f"   + {total_municipios} puntos (Municipios únicos totales)")
 
-    # B) 100 Puntos por completar una Provincia
-    # Buscamos todas las provincias de España
+    # B) Bonificación por completar una Provincia 
+    # (Se suman tantos puntos como municipios tenga esa provincia)
     cursor.execute("SELECT id FROM provincias")
     provincias = cursor.fetchall()
     
@@ -62,13 +62,13 @@ def procesar_usuario(email, nombre, ruta_gpx):
 
         # Si ha visitado todos los de la provincia
         if total_en_prov > 0 and visitados_en_prov == total_en_prov:
-            puntos += 100
+            puntos += total_en_prov  # <-- AQUÍ ESTÁ EL CAMBIO: en vez de 100, sumamos el total
             cursor.execute("SELECT nombre FROM provincias WHERE id = ?", (id_prov,))
             nombre_prov = cursor.fetchone()[0]
-            print(f"   + 100 puntos (¡PROVINCIA COMPLETADA: {nombre_prov}!)")
+            print(f"   + {total_en_prov} puntos (¡PROVINCIA COMPLETADA: {nombre_prov}! - {total_en_prov} municipios)")
 
-    # C) 500 Puntos por completar una Comunidad Autónoma
-    # (Lógica idéntica a la de provincias, pero con CCAA)
+    # C) Bonificación por completar una Comunidad Autónoma
+    # (Se suman tantos puntos como municipios tenga esa CCAA)
     cursor.execute("SELECT id FROM ccaa")
     ccaas = cursor.fetchall()
 
@@ -85,10 +85,10 @@ def procesar_usuario(email, nombre, ruta_gpx):
         visitados_en_ccaa = cursor.fetchone()[0]
 
         if total_en_ccaa > 0 and visitados_en_ccaa == total_en_ccaa:
-            puntos += 500
+            puntos += total_en_ccaa  # <-- AQUÍ ESTÁ EL CAMBIO: en vez de 500, sumamos el total
             cursor.execute("SELECT nombre FROM ccaa WHERE id = ?", (id_ccaa,))
             nombre_ccaa = cursor.fetchone()[0]
-            print(f"   + 500 puntos (¡¡CCAA COMPLETADA: {nombre_ccaa}!!)")
+            print(f"   + {total_en_ccaa} puntos (¡¡CCAA COMPLETADA: {nombre_ccaa}!! - {total_en_ccaa} municipios)")
 
     # 5. Actualizar el total en la tabla de usuarios
     cursor.execute("UPDATE usuarios SET puntos_totales = ? WHERE email = ?", (puntos, email))
