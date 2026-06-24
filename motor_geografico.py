@@ -2,6 +2,12 @@ import gpxpy
 import geopandas as gpd
 from shapely.geometry import Point
 
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from paths import DATA_DIR
+
+ruta_archivo = DATA_DIR / 'municipios_esp.shp'
+
 def procesar_ruta_gpx(ruta_archivo):
     print(f"\n📂 Leyendo archivo GPX: {ruta_archivo}...")
     

@@ -3,36 +3,37 @@
 {% block title %}Mi Panel - RASPA{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-12">
-        <h2>🚴‍♂️ Hola, {{ usuario.nombre_publico }}</h2>
-        <p class="text-muted">Tienes un total de <strong class="text-danger fs-5">{{ usuario.puntos_totales }} puntos</strong>.</p>
-        <hr>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-0">🚴‍♂️ Hola, {{ usuario.nombre_publico }}</h2>
+        <p class="text-muted mb-0">Tienes un total de <strong class="text-danger fs-5">{{ usuario.puntos_totales }} puntos</strong>.</p>
     </div>
+    <a href="/perfil/password" class="btn btn-outline-dark btn-sm">🔑 Cambiar Clave</a>
 </div>
+<hr>
 
 <div class="accordion" id="accordionCCAA">
     {% for ccaa in datos %}
     <div class="accordion-item">
-        
+
         <!-- Cabecera de la Comunidad Autónoma (Clicable para desplegar) -->
         <h2 class="accordion-header" id="heading-{{ ccaa.id }}">
             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ ccaa.id }}" aria-expanded="false" aria-controls="collapse-{{ ccaa.id }}">
-                {{ ccaa.nombre }} 
+                {{ ccaa.nombre }}
                 <span class="badge bg-secondary ms-2">{{ ccaa.visitados }} / {{ ccaa.total }}</span>
                 <span class="ms-auto me-2 text-muted small">({{ ccaa.porcentaje }}%)</span>
             </button>
         </h2>
-        
+
         <!-- Contenido desplegable (Las Provincias) -->
         <div id="collapse-{{ ccaa.id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ ccaa.id }}" data-bs-parent="#accordionCCAA">
             <div class="accordion-body p-0">
-                
+
                 <!-- Barra de progreso general de la CCAA -->
                 <div class="progress" style="height: 8px; border-radius: 0;">
                     <div class="progress-bar bg-danger" role="progressbar" style="width: {{ ccaa.porcentaje }}%;" aria-valuenow="{{ ccaa.porcentaje }}" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
-                
+
                 <!-- Lista de Provincias -->
                 <ul class="list-group list-group-flush">
                     {% for prov in ccaa.provincias %}
@@ -49,7 +50,7 @@
 
             </div>
         </div>
-        
+
     </div>
     {% endfor %}
 </div>

@@ -1,4 +1,8 @@
-# En un entorno real, esta clave sería una variable de entorno oculta.
-# Para pruebas locales, la definimos aquí directamente.
-SECRET_KEY = "una_clave_secreta_muy_larga_y_dificil_de_adivinar_123456"
+import os
+from dotenv import load_dotenv
+
+# Carga las variables del archivo .env
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"

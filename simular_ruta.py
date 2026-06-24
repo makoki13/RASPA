@@ -5,8 +5,28 @@ def procesar_usuario(email, nombre, ruta_gpx):
     conn = sqlite3.connect('data/raspa_db.sqlite')
     cursor = conn.cursor()
 
-    # 1. Registrar usuario si no existe
-    cursor.execute("INSERT OR IGNORE INTO usuarios (email, nombre_publico) VALUES (?, ?)", (email, nombre))
+    # 1. Comprobar si el usuario ya existe
+    cursor.execute("SELECT email FROM usuarios WHERE email = ?", (email,))
+    usuario_existe = cursor.fetchone()
+
+    if not usuario_existe:
+        # USUARIO NUEVO: Generar clave, hashearla, insertar y enviar correo
+        import secrets
+        from server.security import obtener_hash_password
+        from mail_sender import enviar_correo_bienvenida
+        
+        # Generamos una clave del tipo: RASPA-A1B2C3D4
+        password_provisional = f"RASPA-{secrets.token_hex(4).upper()}"
+        
+        # La encriptamos usando la misma función que usa el servidor web
+        hash_pw = obtener_hash_password(password_provisional)
+        
+        # Insertamos al usuario con su contraseña
+        cursor.execute("INSERT INTO usuarios (email, nombre_publico, puntos_totales, password_hash) VALUES (?, ?, 0, ?)", 
+                       (email, nombre, hash_pw))
+        
+        print(f"🆕 Nuevo usuario registrado: {email}")
+        enviar_correo_bienvenida(email, password_provisional)
 
     # 2. Obtener municipios del GPX (usando nuestro script de la Fase 2)
     codigos_municipios = procesar_ruta_gpx(ruta_gpx)

@@ -20,3 +20,4 @@ data/*.qpj
 
 # Archivos temporales de GPX de los usuarios
 gpx_temp/*.gpx
+.env
