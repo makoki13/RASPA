@@ -123,7 +123,7 @@ def ver_panel_html(request: Request, db: Session = Depends(get_db)):
     """
     Pinta el panel de progreso del usuario con HTML.
     """
-    email = usuario_actual.email
+    email = usuario_actual.email # type: ignore
     resultado_panel = []
 
     ccaas = db.query(models.Ccaa).all()
