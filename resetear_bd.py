@@ -59,7 +59,7 @@ def resetear_base_de_datos():
     cursor.execute('''CREATE TABLE municipios (codigo_ign TEXT PRIMARY KEY, nombre TEXT, id_provincia TEXT, FOREIGN KEY(id_provincia) REFERENCES provincias(id))''')
     
     # Tablas de Juego
-    cursor.execute('''CREATE TABLE usuarios (email TEXT PRIMARY KEY, nombre_publico TEXT, puntos_totales INTEGER DEFAULT 0)''')
+    cursor.execute('''CREATE TABLE usuarios (email TEXT PRIMARY KEY, nombre_publico TEXT, puntos_totales INTEGER DEFAULT 0, password_hash TEXT DEFAULT NULL)''')    
     cursor.execute('''CREATE TABLE municipios_visitados (email_usuario TEXT, codigo_ign_municipio TEXT, PRIMARY KEY (email_usuario, codigo_ign_municipio), FOREIGN KEY (email_usuario) REFERENCES usuarios(email), FOREIGN KEY (codigo_ign_municipio) REFERENCES municipios(codigo_ign))''')
 
     # 3. POBLAR CCAA Y PROVINCIAS
