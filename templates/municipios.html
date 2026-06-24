@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}{{ provincia.nombre }} - RASPA{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="/panel" class="btn btn-outline-secondary btn-sm">← Volver al Panel</a>
+    <h3 class="mt-2">{{ provincia.nombre }}</h3>
+    <p class="text-muted">
+        Progreso: <strong>{{ provincia.visitados }}</strong> / <strong>{{ provincia.total_municipios }}</strong> municipios 
+        ({{ (provincia.visitados / provincia.total_municipios * 100) | round(2) }}%)
+    </p>
+    
+    <!-- Barra de progreso de la provincia -->
+    <div class="progress" style="height: 15px;">
+        {% set porcentaje = (provincia.visitados / provincia.total_municipios * 100) | round(2) %}
+        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ porcentaje }}%;" aria-valuenow="{{ porcentaje }}" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+    <hr>
+</div>
+
+<!-- Cuadrícula de municipios -->
+<div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-2">
+    {% for m in provincia.municipios %}
+    <div class="col">
+        <!-- Si está visitado, tarjeta verde. Si no, gris -->
+        <div class="card {% if m.visitado %}bg-success text-white{% else %}bg-light text-dark{% endif %} border">
+            <div class="card-body p-2 text-center">
+                <small class="card-text">{{ m.nombre }}</small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
