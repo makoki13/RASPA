@@ -8,15 +8,15 @@
         <div class="card shadow-sm">
             <div class="card-body p-4">
                 <h3 class="text-center mb-4">📝 Registro de nuevo ciclista</h3>
-                
+
                 {% if msg == 'error_correos' %}
-                    <div class="alert alert-danger">Los correos electrónicos no coinciden.</div>
+                <div class="alert alert-danger">Los correos electrónicos no coinciden.</div>
                 {% elif msg == 'error_password_short' %}
-                    <div class="alert alert-danger">La contraseña debe tener al menos 6 caracteres.</div>
+                <div class="alert alert-danger">La contraseña debe tener al menos 6 caracteres.</div>
                 {% elif msg == 'error_passwords' %}
-                    <div class="alert alert-danger">Las contraseñas no coinciden.</div>
+                <div class="alert alert-danger">Las contraseñas no coinciden.</div>
                 {% elif msg == 'error_existe' %}
-                    <div class="alert alert-warning">Este correo electrónico ya está registrado. <a href="/login" class="alert-link">¿Quieres iniciar sesión?</a></div>
+                <div class="alert alert-warning">Este correo electrónico ya está registrado. <a href="/login" class="alert-link">¿Quieres iniciar sesión?</a></div>
                 {% endif %}
 
                 <form action="/registro" method="POST">
@@ -41,7 +41,6 @@
                         <input type="password" class="form-control" name="password_confirm" required>
                     </div>
                     <button type="submit" class="btn btn-danger w-100 mb-3">Crear cuenta y entrar</button>
-                    <a href="/" class="btn btn-outline-secondary w-100">⬅️ Atrás</a>
                 </form>
             </div>
         </div>
