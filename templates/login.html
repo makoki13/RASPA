@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Iniciar Sesión - RASPA{% endblock %}
+{% block title %}Entrar - RASPA{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center mt-5">
@@ -9,31 +9,48 @@
             <div class="card-body p-4">
                 <h3 class="text-center mb-4">🚴‍♂️ Accede a RASPA</h3>
                 
-                <!-- Si hay error, lo mostramos aquí -->
-                {% if error %}
-                <div class="alert alert-danger" role="alert">
-                    {{ error }}
+                <!-- Modal de Error de Login -->
+                <div class="modal fade" id="modalError" tabindex="-1" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-danger">
+                      <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">Error de acceso</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <p>El correo o la contraseña no son correctos.</p>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Entendido</button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                {% endif %}
 
-                <!-- Formulario que envía datos a /login -->
                 <form action="/login" method="POST">
                     <div class="mb-3">
-                        <label for="username" class="form-label">Correo electrónico</label>
-                        <input type="email" class="form-control" id="username" name="username" required autofocus>
+                        <label class="form-label">Correo electrónico</label>
+                        <input type="email" class="form-control" name="username" required autofocus>
                     </div>
                     <div class="mb-4">
-                        <label for="password" class="form-label">Contraseña</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <label class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" name="password" required>
                     </div>
-                    <button type="submit" class="btn btn-danger w-100">Entrar al Panel</button>
+                    <button type="submit" class="btn btn-danger w-100 mb-3">Entrar al Panel</button>
+                    <a href="/" class="btn btn-outline-secondary w-100">⬅️ Atrás</a>
                 </form>
-                
-                <p class="text-muted text-center mt-3" style="font-size: 0.8em;">
-                    Si nunca has enviado una ruta, no tendrás contraseña.
-                </p>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Script para lanzar el modal si hay error -->
+{% if error %}
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var modalError = new bootstrap.Modal(document.getElementById('modalError'));
+    modalError.show();
+  });
+</script>
+{% endif %}
 {% endblock %}

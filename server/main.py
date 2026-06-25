@@ -1,28 +1,30 @@
-from fastapi.responses import JSONResponse
-from fastapi import Depends, FastAPI, HTTPException, status, Request
-from fastapi import Response, Cookie, Form
-from fastapi.responses import RedirectResponse
-from fastapi.responses import HTMLResponse
+import os
+import sys
+from fastapi import Depends, FastAPI, HTTPException, status, Request, Response, Cookie, Form
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from fastapi.templating import Jinja2Templates
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 # Importaciones de nuestros módulos
 from server import models, database, security
 
-# Arriba donde importas paths
-import sys, os
+# Configurar rutas absolutas (para la nube)
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from paths import TEMPLATE_DIR
 
 app = FastAPI(title="RASPA API", description="Race Across Spain - Backend")
 
-# Este objeto de FastAPI es el que busca la pulsera (Token) en las cabeceras de las peticiones
+# Este objeto busca la pulsera en las cabeceras (para /docs) o la ignora si no está (para web)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login", auto_error=False)
 
-# Configurar Jinja2 para leer la carpeta de plantillas HTML
+# Configurar Jinja2 y archivos estáticos (CSS, imágenes)
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 # Dependencia que abre y cierra la conexión a la base de datos
 def get_db():
@@ -38,31 +40,36 @@ def get_db():
 # ==========================================
 
 @app.get("/", response_class=HTMLResponse)
+def pagina_inicio(request: Request):
+    """Página de inicio (Splash screen)"""
+    return templates.TemplateResponse(request, "index.html", {"request": request}) # type: ignore
+
+@app.get("/ayuda", response_class=HTMLResponse)
+def pagina_ayuda(request: Request):
+    """Página de ayuda"""
+    return templates.TemplateResponse(request, "ayuda.html", {"request": request}) # type: ignore
+
+@app.get("/ranking", response_class=HTMLResponse)
 def pagina_ranking_html(request: Request, db: Session = Depends(get_db)):
     """Pinta la página web del ranking"""
     usuarios = db.query(models.Usuario).order_by(models.Usuario.puntos_totales.desc()).all()
     resultado = [{"nombre": u.nombre_publico, "puntos": u.puntos_totales} for u in usuarios]
-    
     return templates.TemplateResponse(request, "ranking.html", {"request": request, "ranking": resultado}) # type: ignore
-
 
 @app.get("/login", response_class=HTMLResponse)
 def pagina_login(request: Request, error: str = None): # type: ignore
     """Muestra el formulario de login"""
     return templates.TemplateResponse(request, "login.html", {"request": request, "error": error}) # type: ignore
 
-
 @app.post("/login")
 def login_procesar(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    """
-    Procesa el formulario, verifica la contraseña y redirige al panel con una Cookie.
-    """
+    """Procesa el login, verifica la contraseña y redirige al panel con una Cookie."""
     usuario = db.query(models.Usuario).filter(models.Usuario.email == form_data.username).first()
     hash_guardado = usuario.password_hash if usuario else None
     
     if not usuario or not hash_guardado or not security.verificar_password(form_data.password, hash_guardado): # type: ignore
-        # Si falla, le pasamos el error a la página HTML
-        raise HTTPException(status_code=303, detail="Correo o contraseña incorrectos", headers={"Location": "/login?error=Incorrectos"})
+        # Si falla, redirigimos al login con el flag de error para mostrar el modal
+        return RedirectResponse(url="/login?error=true", status_code=303)
     
     # Si es correcto, generamos el token
     token_acceso = security.crear_token_acceso(data={"sub": usuario.email})
@@ -70,7 +77,56 @@ def login_procesar(response: Response, form_data: OAuth2PasswordRequestForm = De
     # Creamos una redirección hacia el panel
     redirect = RedirectResponse(url="/panel", status_code=303)
     
-    # ¡LA MAGIA! Metemos el token en una Cookie segura (httponly para que JavaScript no pueda robarla)
+    # ¡LA MAGIA! Metemos el token en una Cookie segura (httponly)
+    redirect.set_cookie(key="access_token", value=token_acceso, httponly=True)
+    
+    return redirect
+
+@app.get("/registro", response_class=HTMLResponse)
+def pagina_registro(request: Request, msg: str = None): # type: ignore
+    """Muestra el formulario de registro"""
+    return templates.TemplateResponse(request, "registro.html", {"request": request, "msg": msg}) # type: ignore
+
+@app.post("/registro")
+def procesar_registro(
+    request: Request,
+    nombre: str = Form(...),
+    email: str = Form(...),
+    email_confirm: str = Form(...),
+    password: str = Form(...),
+    password_confirm: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Procesa el registro, crea el usuario y hace login automático"""
+    # 1. Validaciones
+    if email != email_confirm:
+        return RedirectResponse(url="/registro?msg=error_correos", status_code=303)
+    
+    if len(password) < 6:
+        return RedirectResponse(url="/registro?msg=error_password_short", status_code=303)
+        
+    if password != password_confirm:
+        return RedirectResponse(url="/registro?msg=error_passwords", status_code=303)
+
+    # 2. Comprobar si el usuario ya existe
+    usuario_existente = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+    if usuario_existente:
+        return RedirectResponse(url="/registro?msg=error_existe", status_code=303)
+
+    # 3. Crear el nuevo usuario
+    password_hash = security.obtener_hash_password(password)
+    nuevo_usuario = models.Usuario(
+        email=email,
+        nombre_publico=nombre,
+        puntos_totales=0,
+        password_hash=password_hash
+    )
+    db.add(nuevo_usuario)
+    db.commit()
+
+    # 4. Login automático: Generar el token y meterlo en una cookie
+    token_acceso = security.crear_token_acceso(data={"sub": email})
+    redirect = RedirectResponse(url="/panel", status_code=303)
     redirect.set_cookie(key="access_token", value=token_acceso, httponly=True)
     
     return redirect
@@ -86,25 +142,30 @@ def obtener_usuario_actual(
     bearer_token: str | None = Depends(oauth2_scheme), # Mira en la cabecera de /docs
     db: Session = Depends(get_db)
 ):
-    # Usamos la cookie si existe, si no, usamos el token del swagger
+    """
+    Revisa la pulsera. Prioriza la Cookie (navegador normal), 
+    si no hay, mira si viene del Swagger (/docs).
+    """
     token_a_comprobar = access_token or bearer_token
     
     if not token_a_comprobar:
         raise HTTPException(status_code=401, detail="No autenticado")
         
     try:
-        payload = security.jwt.decode(token_a_comprobar, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+        payload = security.jwt.decode(token_a_comprobar, security.SECRET_KEY, algorithms=[security.ALGORITHM]) # type: ignore
         email = payload.get("sub")
         if email is None:
-            raise HTTPException(status_code=401, detail="Token inválido")
+            raise HTTPException(status_code=401, detail="Token inválido (falta el email interno)")
     except Exception:
-        raise HTTPException(status_code=401, detail="Token caducado")
+        raise HTTPException(status_code=401, detail="Token inválido o ha caducado")
     
+    # Si la pulsera es buena, buscamos al usuario en la BD para devolverlo entero
     usuario = db.query(models.Usuario).filter(models.Usuario.email == email).first()
     if usuario is None:
-        raise HTTPException(status_code=401, detail="Usuario no encontrado")
+        raise HTTPException(status_code=401, detail="El usuario de la pulsera no existe en la BD")
     
     return usuario
+
 
 # ==========================================
 # RUTAS PRIVADAS (Requieren pulsera válida)
@@ -118,7 +179,6 @@ def ver_mi_perfil(usuario_actual: models.Usuario = Depends(obtener_usuario_actua
         "tu_email_es": usuario_actual.email,
         "tus_puntos": usuario_actual.puntos_totales
     }
-
 
 @app.get("/panel", response_class=HTMLResponse)
 def ver_panel_html(request: Request, usuario_actual: models.Usuario = Depends(obtener_usuario_actual), db: Session = Depends(get_db)): # type: ignore
@@ -218,9 +278,6 @@ def ver_detalle_provincia_html(id_provincia: str, request: Request, usuario_actu
 
     return templates.TemplateResponse(request, "municipios.html", {"request": request, "provincia": datos_provincia}) # type: ignore
 
-# Cazador de errores: Si algo pide autenticación y falla, redirigimos al login
-from fastapi.responses import RedirectResponse
-from starlette.exceptions import HTTPException as StarletteHTTPException
 
 @app.get("/perfil/password", response_class=HTMLResponse)
 def formulario_password(request: Request, msg: str = None, usuario_actual: models.Usuario = Depends(obtener_usuario_actual)): # type: ignore
@@ -239,36 +296,39 @@ def procesar_cambio_password(
 ):
     """Procesa el cambio de contraseña"""
     
-    # 1. Comprobar que no estén vacías
-    if not old_password or not new_password:
-        return RedirectResponse(url="/perfil/password?msg=error_vacias", status_code=303)
-        
-    # 2. Comprobar que las dos nuevas coinciden
-    if new_password != new_password2:
+    # 1. Comprobar que no estén vacías y coinciden
+    if not old_password or not new_password or new_password != new_password2:
         return RedirectResponse(url="/perfil/password?msg=error_vacias", status_code=303)
 
-    # 3. Verificar que la contraseña vieja es correcta
+    # 2. Verificar que la contraseña vieja es correcta
     hash_guardado = usuario_actual.password_hash
     if not security.verificar_password(old_password, hash_guardado): # type: ignore
         return RedirectResponse(url="/perfil/password?msg=error_vieja", status_code=303)
 
-    # 4. Si todo es correcto, hasheamos la nueva y la guardamos
+    # 3. Si todo es correcto, hasheamos la nueva y la guardamos
     nuevo_hash = security.obtener_hash_password(new_password)
-    usuario_actual.password_hash = nuevo_hash
+    usuario_actual.password_hash = nuevo_hash # type: ignore
     db.commit()
 
-    # 5. Redirigir al formulario con mensaje de éxito
+    # 4. Redirigir al formulario con mensaje de éxito
     return RedirectResponse(url="/perfil/password?msg=actualizada", status_code=303)
+
+
+@app.get("/logout")
+def logout():
+    """Elimina la cookie y vuelve al inicio"""
+    response = RedirectResponse(url="/")
+    response.delete_cookie("access_token") # Borramos la pulsera
+    return response
+
+
+# ==========================================
+# CAZADOR DE ERRORES (Para redirigir al login si falla la auth)
+# ==========================================
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     if exc.status_code == 401:
         return RedirectResponse(url="/login")
-    # Si es otro error (ej. 404), dejamos que FastAPI lo maneje por defecto
+    # Si es otro error (ej. 404), devolvemos JSON para la API de /docs
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
-
-@app.get("/logout")
-def logout():
-    response = RedirectResponse(url="/login")
-    response.delete_cookie("access_token") # Borramos la pulsera
-    return response

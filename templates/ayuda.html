@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Ayuda - RASPA{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h2 class="mb-4">❓ ¿Qué es RASPA?</h2>
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <p class="lead"><strong>Race Across Spain (RASPA)</strong> es un juego basado en tus rutas en bicicleta.</p>
+                <p>El objetivo es "raspar" tantos municipios de España como sea posible. Envía un archivo GPX con tu ruta por correo electrónico y nuestro sistema calculará por qué municipios has pasado.</p>
+                <h5 class="mt-4">📊 Sistema de Puntos</h5>
+                <ul>
+                    <li><strong>1 punto</strong> por cada municipio único visitado.</li>
+                    <li><strong>Bonificación</strong> al completar todos los municipios de una provincia (se suman los puntos de todos sus municipios).</li>
+                    <li><strong>Super Bonificación</strong> al completar una Comunidad Autónoma (se suman los puntos de todos sus municipios).</li>
+                </ul>
+                <h5 class="mt-4">🛠️ ¿Cómo empiezo?</h5>
+                <ol>
+                    <li>Regístrate en la web o envía tu primer ruta a nuestro correo.</li>
+                    <li>Recibirás una clave de acceso por correo.</li>
+                    <li>Entra a tu panel privado para ver tu mapa de España con tus progresos.</li>
+                </ol>
+            </div>
+        </div>
+        <a href="/" class="btn btn-outline-secondary">⬅️ Atrás</a>
+    </div>
+</div>
+{% endblock %}
