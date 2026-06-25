@@ -22,7 +22,7 @@ print("✅ Base de datos verificada.")
 # NUEVO: Comprobar si hay que poblarla
 from sqlalchemy import func
 db_check = database.SessionLocal()
-if db_check.query(func.count(models.Municipio.id)).scalar() == 0:
+if db_check.query(func.count()).filter(models.Municipio.codigo_ign.isnot(None)).scalar() == 0:
     print("⚠️ Base de datos vacía. Ejecutando script de poblamiento...")
     db_check.close()
     from poblar_db import poblar_base_datos
