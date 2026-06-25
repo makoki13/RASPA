@@ -7,12 +7,6 @@ __pycache__/
 *$py.class
 
 # Archivos de datos pesados (Los shapefiles los tendremos localmente, NO en GitHub)
-data/*.shp
-data/*.dbf
-data/*.shx
-data/*.prj
-data/*.cpg
-data/*.qpj
 
 # Base de datos local (si decides no subirla)
 *.db
