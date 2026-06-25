@@ -54,8 +54,10 @@ def procesar_ruta_gpx(ruta_archivo):
     # Le decimos que el sistema de coordenadas es WGS84 (el que usan los GPS)
     gdf_puntos = gpd.GeoDataFrame(geometry=geometria_puntos, crs="EPSG:4326")
 
-    # SPATIAL JOIN: Por cada punto del ciclista, busca en qué polígono (municipio) cae
-    # predicate="within" significa "el punto está completamente dentro del municipio"
+    # Aseguramos que ambos mapas usan el mismo sistema de coordenadas (WGS84)
+    mapa_esp = mapa_esp.to_crs(epsg=4326)
+
+    # SPATIAL JOIN
     puntos_en_municipios = gpd.sjoin(gdf_puntos, mapa_esp, how="inner", predicate="within")
 
     # 3. LIMPIEZA Y RESULTADO

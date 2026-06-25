@@ -15,6 +15,22 @@ from server import database, models
 database.Base.metadata.create_all(bind=database.engine)
 print("✅ Base de datos verificada.")
 
+from server import database, models
+database.Base.metadata.create_all(bind=database.engine)
+print("✅ Base de datos verificada.")
+
+# NUEVO: Comprobar si hay que poblarla
+from sqlalchemy import func
+db_check = database.SessionLocal()
+if db_check.query(func.count(models.Municipio.id)).scalar() == 0:
+    print("⚠️ Base de datos vacía. Ejecutando script de poblamiento...")
+    db_check.close()
+    from poblar_db import poblar_base_datos
+    poblar_base_datos()
+else:
+    db_check.close()
+    print("✅ Base de datos contiene municipios, saltando poblamiento.")
+
 # 2. Ahora sí, importamos la app de FastAPI
 from server.main import app
 

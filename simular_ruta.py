@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from sqlalchemy.exc import IntegrityError
 from motor_geografico import procesar_ruta_gpx
 from server.database import SessionLocal
 from server import models
@@ -54,7 +53,7 @@ def procesar_usuario(email_usuario, nombre_usuario, ruta_gpx):
         print("\n📊 Calculando puntuación...")
 
         # A) 1 Punto por municipio único
-        total_municipios = db.query(func.count(models.MunicipioVisitado.id)).filter(
+        total_municipios = db.query(func.count()).filter(
             models.MunicipioVisitado.email_usuario == email_usuario
         ).scalar()
         puntos += total_municipios
@@ -66,7 +65,7 @@ def procesar_usuario(email_usuario, nombre_usuario, ruta_gpx):
         for prov in provincias:
             total_en_prov = db.query(func.count(models.Municipio.codigo_ign)).filter(models.Municipio.id_provincia == prov.id).scalar()
             
-            visitados_en_prov = db.query(func.count(models.MunicipioVisitado.id)).join(
+            visitados_en_prov = db.query(func.count()).join(
                 models.Municipio, models.MunicipioVisitado.codigo_ign_municipio == models.Municipio.codigo_ign
             ).filter(
                 models.Municipio.id_provincia == prov.id,
@@ -85,7 +84,7 @@ def procesar_usuario(email_usuario, nombre_usuario, ruta_gpx):
                 models.Provincia, models.Municipio.id_provincia == models.Provincia.id
             ).filter(models.Provincia.id_ccaa == ccaa.id).scalar()
 
-            visitados_en_ccaa = db.query(func.count(models.MunicipioVisitado.id)).join(
+            visitados_en_ccaa = db.query(func.count()).join(
                 models.Municipio, models.MunicipioVisitado.codigo_ign_municipio == models.Municipio.codigo_ign
             ).join(
                 models.Provincia, models.Municipio.id_provincia == models.Provincia.id
