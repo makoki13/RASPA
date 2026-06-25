@@ -42,24 +42,24 @@ def get_db():
 @app.get("/", response_class=HTMLResponse)
 def pagina_inicio(request: Request):
     """Página de inicio (Splash screen)"""
-    return templates.TemplateResponse(request, "index.html", {"request": request}) # type: ignore
+    return templates.TemplateResponse(request, "index.html", {"request": request, "mostrar_panel": True}) # type: ignore
 
 @app.get("/ayuda", response_class=HTMLResponse)
 def pagina_ayuda(request: Request):
     """Página de ayuda"""
-    return templates.TemplateResponse(request, "ayuda.html", {"request": request}) # type: ignore
+    return templates.TemplateResponse(request, "ayuda.html", {"request": request, "mostrar_panel": True}) # type: ignore
 
 @app.get("/ranking", response_class=HTMLResponse)
 def pagina_ranking_html(request: Request, db: Session = Depends(get_db)):
     """Pinta la página web del ranking"""
     usuarios = db.query(models.Usuario).order_by(models.Usuario.puntos_totales.desc()).all()
     resultado = [{"nombre": u.nombre_publico, "puntos": u.puntos_totales} for u in usuarios]
-    return templates.TemplateResponse(request, "ranking.html", {"request": request, "ranking": resultado}) # type: ignore
+    return templates.TemplateResponse(request, "ranking.html", {"request": request, "ranking": resultado, "mostrar_panel": True}) # type: ignore
 
 @app.get("/login", response_class=HTMLResponse)
 def pagina_login(request: Request, error: str = None): # type: ignore
-    """Muestra el formulario de login"""
-    return templates.TemplateResponse(request, "login.html", {"request": request, "error": error}) # type: ignore
+    """Muestra el formulario de login (Oculta el botón Mi Panel)"""
+    return templates.TemplateResponse(request, "login.html", {"request": request, "error": error, "mostrar_panel": False}) # type: ignore
 
 @app.post("/login")
 def login_procesar(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -84,8 +84,8 @@ def login_procesar(response: Response, form_data: OAuth2PasswordRequestForm = De
 
 @app.get("/registro", response_class=HTMLResponse)
 def pagina_registro(request: Request, msg: str = None): # type: ignore
-    """Muestra el formulario de registro"""
-    return templates.TemplateResponse(request, "registro.html", {"request": request, "msg": msg}) # type: ignore
+    """Muestra el formulario de registro (Oculta el botón Mi Panel)"""
+    return templates.TemplateResponse(request, "registro.html", {"request": request, "msg": msg, "mostrar_panel": False}) # type: ignore
 
 @app.post("/registro")
 def procesar_registro(
@@ -141,7 +141,7 @@ def obtener_usuario_actual(
     access_token: str | None = Cookie(default=None), # Mira en las cookies
     bearer_token: str | None = Depends(oauth2_scheme), # Mira en la cabecera de /docs
     db: Session = Depends(get_db)
-):
+) -> models.Usuario: # type: ignore
     """
     Revisa la pulsera. Prioriza la Cookie (navegador normal), 
     si no hay, mira si viene del Swagger (/docs).
@@ -231,7 +231,7 @@ def ver_panel_html(request: Request, usuario_actual: models.Usuario = Depends(ob
         })
         
     # Devolvemos el HTML pasando el usuario y los datos calculados
-    return templates.TemplateResponse(request, "panel.html", {"request": request, "usuario": usuario_actual, "datos": resultado_panel}) # type: ignore
+    return templates.TemplateResponse(request, "panel.html", {"request": request, "usuario": usuario_actual, "datos": resultado_panel, "mostrar_panel": True}) # type: ignore
 
 
 @app.get("/panel/provincia/{id_provincia}", response_class=HTMLResponse)
@@ -276,13 +276,13 @@ def ver_detalle_provincia_html(id_provincia: str, request: Request, usuario_actu
         "municipios": lista_municipios
     }
 
-    return templates.TemplateResponse(request, "municipios.html", {"request": request, "provincia": datos_provincia}) # type: ignore
+    return templates.TemplateResponse(request, "municipios.html", {"request": request, "provincia": datos_provincia, "mostrar_panel": True}) # type: ignore
 
 
 @app.get("/perfil/password", response_class=HTMLResponse)
 def formulario_password(request: Request, msg: str = None, usuario_actual: models.Usuario = Depends(obtener_usuario_actual)): # type: ignore
     """Muestra el formulario para cambiar la contraseña"""
-    return templates.TemplateResponse(request, "cambiar_password.html", {"request": request, "msg": msg}) # type: ignore
+    return templates.TemplateResponse(request, "cambiar_password.html", {"request": request, "msg": msg, "mostrar_panel": True}) # type: ignore
 
 
 @app.post("/perfil/password")

@@ -20,7 +20,9 @@
         <div class="container">
             <a class="navbar-brand" href="/">🚴‍♂️ RASPA (Race Across Spain)</a>
             <div class="ml-auto">
+                {% if mostrar_panel == True %}
                 <a href="/panel" class="btn btn-light btn-sm me-1">Mi Panel</a>
+                {% endif %}
                 <a href="/logout" class="btn btn-outline-light btn-sm">Salir</a>
             </div>
         </div>

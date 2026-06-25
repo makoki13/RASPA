@@ -1,25 +1,32 @@
 import gpxpy
 import geopandas as gpd
 from shapely.geometry import Point
+import sys
+import os
 
-import sys, os
+# ==========================================================
+# IMPORTANTE: Configurar rutas absolutas para la nube (Render)
+# ==========================================================
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from paths import DATA_DIR
 
-ruta_archivo = DATA_DIR / 'municipios_esp.shp'
 
 def procesar_ruta_gpx(ruta_archivo):
     print(f"\n📂 Leyendo archivo GPX: {ruta_archivo}...")
     
     # 1. PARSEAR EL GPX (Extraer latitudes y longitudes)
-    with open(ruta_archivo, 'r', encoding='utf-8') as f:
-        gpx = gpxpy.parse(f)
+    try:
+        with open(ruta_archivo, 'r', encoding='utf-8') as f:
+            gpx = gpxpy.parse(f)
+    except Exception as e:
+        print(f"❌ Error al leer el archivo GPX: {e}")
+        return []
 
     puntos = []
     for track in gpx.tracks:
         for segment in track.segments:
             for point in segment.points:
-                # GeoPandas usa el orden (Longitud, Latitud) = (X, Y)
+                # GeoPandas usa el orden (X, Y) = (Longitud, Latitud)
                 puntos.append((point.longitude, point.latitude))
 
     if not puntos:
@@ -30,8 +37,15 @@ def procesar_ruta_gpx(ruta_archivo):
 
     # 2. CRUCE GEOGRÁFICO (La magia de GeoPandas)
     print("🗺️ Calculando intersección con los municipios de España...")
-    # Cargamos tu Shapefile del IGN
-    mapa_esp = gpd.read_file('data/municipios_esp.shp')
+    
+    # Usar la ruta absoluta garantizada por paths.py
+    ruta_shapefile = DATA_DIR / 'municipios_esp.shp'
+    
+    try:
+        mapa_esp = gpd.read_file(ruta_shapefile)
+    except Exception as e:
+        print(f"❌ Error crítico: No se pudo cargar el mapa de España en {ruta_shapefile}. Error: {e}")
+        return []
 
     # Convertimos la lista de coordenadas del GPX en una geometría de puntos
     geometria_puntos = [Point(lon, lat) for lon, lat in puntos]
@@ -56,15 +70,3 @@ def procesar_ruta_gpx(ruta_archivo):
         print(f"   - {fila['NAMEUNIT']}")
 
     return municipios_unicos
-
-# --- PRUEBA DEL SCRIPT ---
-if __name__ == "__main__":
-    # Pon aquí el nombre del archivo que hayas metido en gpx_temp/
-    archivo_a_probar = 'gpx_temp/prueba_ruta.gpx' 
-    
-    try:
-        codigos_municipios = procesar_ruta_gpx(archivo_a_probar)
-        print("\n💡 Lista de códigos IGN para la base de datos:")
-        print(codigos_municipios)
-    except FileNotFoundError:
-        print(f"❌ No encuentro el archivo {archivo_a_probar}. Asegúrate de poner un GPX real en la carpeta gpx_temp/")
