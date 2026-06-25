@@ -9,7 +9,15 @@
             <div class="card-body p-4">
                 <h3 class="text-center mb-4">📝 Registro de nuevo ciclista</h3>
                 
-                {% if msg %}<div class="alert alert-info text-center">{{ msg }}</div>{% endif %}
+                {% if msg == 'error_correos' %}
+                    <div class="alert alert-danger">Los correos electrónicos no coinciden.</div>
+                {% elif msg == 'error_password_short' %}
+                    <div class="alert alert-danger">La contraseña debe tener al menos 6 caracteres.</div>
+                {% elif msg == 'error_passwords' %}
+                    <div class="alert alert-danger">Las contraseñas no coinciden.</div>
+                {% elif msg == 'error_existe' %}
+                    <div class="alert alert-warning">Este correo electrónico ya está registrado. <a href="/login" class="alert-link">¿Quieres iniciar sesión?</a></div>
+                {% endif %}
 
                 <form action="/registro" method="POST">
                     <div class="mb-3">
@@ -20,11 +28,19 @@
                         <label class="form-label">Correo electrónico</label>
                         <input type="email" class="form-control" name="email" required>
                     </div>
-                    <div class="mb-4">
+                    <div class="mb-3">
                         <label class="form-label">Confirmación de correo electrónico</label>
                         <input type="email" class="form-control" name="email_confirm" required>
                     </div>
-                    <button type="submit" class="btn btn-danger w-100 mb-3">Registrarse</button>
+                    <div class="mb-3">
+                        <label class="form-label">Contraseña (mínimo 6 caracteres)</label>
+                        <input type="password" class="form-control" name="password" required minlength="6">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Confirmación de contraseña</label>
+                        <input type="password" class="form-control" name="password_confirm" required>
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100 mb-3">Crear cuenta y entrar</button>
                     <a href="/" class="btn btn-outline-secondary w-100">⬅️ Atrás</a>
                 </form>
             </div>
