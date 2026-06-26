@@ -1,5 +1,5 @@
-import imaplib
 import email
+import imaplib
 import os
 from email.header import decode_header
 
@@ -7,17 +7,17 @@ from email.header import decode_header
 # CONFIGURACIÓN DE TU CORREO
 # ==========================================
 EMAIL_USER = "raspagpx@gmail.com"  # <-- CAMBIA ESTO
-EMAIL_PASS = "fmla nolb ztab akii" 
+EMAIL_PASS = "fmla nolb ztab akii"        # <-- LA CONTRASEÑA DE APLICACIÓN
 IMAP_SERVER = "imap.gmail.com"
 CARPETA_DESCARGA = "gpx_temp"
 
-# Palabra clave que debe llevar el asunto para que el bot lo procese
-ASUNTO_ESPERADO = "RASPA" 
+# Ya no necesitamos el asunto. Aceptamos TODO lo que llegue.
+# Si no tiene GPX, el propio bucle lo detectará y lo ignorará.
 
 
-def descargar_adjuntos():
+def descargar_adjuntos():  # noqa: C901
     print("📬 Conectando al buzón de correo...")
-    
+
     # Conectar y loguearse
     try:
         mail = imaplib.IMAP4_SSL(IMAP_SERVER)
@@ -28,54 +28,43 @@ def descargar_adjuntos():
         return []
 
     # Seleccionar la bandeja de entrada
-    mail.select("inbox")
+    mail.select("INBOX")
 
-    # Buscar correos NO LEÍDOS (UNSEEN) que contengan "RASPA" en el asunto
-    status, mensajes = mail.search(None, f'(UNSEEN SUBJECT "{ASUNTO_ESPERADO}")')
+    # BUSCAR TODOS LOS CORREOS NO LEÍDOS (Ya no miramos el asunto)
+    status, mensajes = mail.search(None, "UNSEEN")
     ids_correos = mensajes[0].split()
 
     if not ids_correos:
-        print("📭 No hay nuevas rutas en el buzón.")
+        print("📭 No hay nuevos correos en el buzón.")
         mail.logout()
         return []
 
-    print(f"🚴 ¡Se encontraron {len(ids_correos)} ruta(s) nueva(s)! Procesando...\n")
-    
+    print(f"🚴 ¡Se encontraron {len(ids_correos)} correo(s) nuevo(s). Analizando adjuntos...\n")
+
     rutas_procesadas = []
 
     for num in ids_correos:
         # Obtener el correo completo
         status, datos_correo = mail.fetch(num, "(RFC822)")
-        
-        # Buscamos la parte que realmente contiene el correo (ignorando basura residual de IMAP)
-        raw_email = None
-        for response_part in datos_correo:
-            if isinstance(response_part, tuple):
-                raw_email = response_part[1]
-                break
-        
-        # Si por alguna razón no se pudo leer, saltamos a el siguiente correo
-        if raw_email is None:
-            print("      ⚠️ Error al leer el contenido del correo.")
-            continue
+        mensaje = email.message_from_bytes(datos_correo[0][1]) # type: ignore
 
-        mensaje = email.message_from_bytes(raw_email)
         # 1. Sacar el remitente (Para saber qué usuario es)
         remitente_crudo = mensaje["From"]
-        # Limpiar el remitente para quedarnos solo con el email
         if "<" in remitente_crudo and ">" in remitente_crudo:
             email_usuario = remitente_crudo.split("<")[1].split(">")[0]
         else:
             email_usuario = remitente_crudo
 
-        print(f"   -> Ruta de: {email_usuario}")
+        print(f"   -> Analizando correo de: {email_usuario}")
 
-        # 2. Buscar el adjunto .gpx
+        # 2. Buscar el/los adjunto/s .gpx
         gpx_encontrado = False
+
         for parte in mensaje.walk():
-            # Si es un adjunto
+            # Si es un contenedor multipart, seguimos profundizando
             if parte.get_content_maintype() == "multipart":
                 continue
+            # Si no tiene cabecera de disposición, es el cuerpo del texto, lo saltamos
             if parte.get("Content-Disposition") is None:
                 continue
 
@@ -86,35 +75,33 @@ def descargar_adjuntos():
                 if isinstance(nombre_archivo, bytes):
                     nombre_archivo = nombre_archivo.decode(encoding or "utf-8")
 
-                # Si es un GPX, lo guardamos
+                # Si es un GPX, ¡lo procesamos!
                 if nombre_archivo.lower().endswith(".gpx"):
                     gpx_encontrado = True
+
                     # Generar un nombre único para no sobreescribir si dos usuarios envían "ruta.gpx"
                     nombre_guardado = f"{email_usuario.replace('@', '_at_')}_{nombre_archivo}"
                     ruta_guardado = os.path.join(CARPETA_DESCARGA, nombre_guardado)
 
-                                        # Extraer el contenido y asegurarnos de que son bytes
-                    archivo_bytes = parte.get_payload(decode=True)
-                    
-                    if isinstance(archivo_bytes, bytes):
-                        # Guardar el archivo
-                        with open(ruta_guardado, "wb") as f:
-                            f.write(archivo_bytes)
-                    else:
-                        print("      ⚠️ Error: El adjunto no se pudo leer como archivo binario.")
-                    
-                    print(f"      ✅ GPX guardado como: {nombre_guardado}")
+                    # Guardar el archivo
+                    with open(ruta_guardado, "wb") as f:
+                        f.write(parte.get_payload(decode=True)) # type: ignore
+
+                    print(f"      ✅ GPX encontrado y guardado como: {nombre_guardado}")
                     rutas_procesadas.append((email_usuario, ruta_guardado))
 
-        if not gpx_encontrado:
-            print(f"      ⚠️ El correo no contenía ningún archivo .gpx adjunto.")
+        # 3. Evaluar qué hacer con el correo
+        if gpx_encontrado:
+            print("      🎯 Correo aceptado para procesamiento.")
+        else:
+            print("      ⚠️ El correo no contenía ningún archivo .gpx adjunto. Ignorado.")
 
-        # 3. Marcar el correo como LEÍDO para no procesarlo de nuevo
+        # 4. MARCAR EL CORREO COMO LEÍDO
+        # (Tanto si tiene GPX como si no lo tiene, para que Gmail lo quite de la bandeja de entrada)
         mail.store(num, "+FLAGS", "\\Seen")
 
     # Cerrar conexión
     mail.close()
-    mail.logout()
     print("\n🔶 Buzón actualizado.")
     return rutas_procesadas
 
